@@ -1,0 +1,89 @@
+consumes:
+- application/json
+- application/xml
+- application/gob
+- application/x-gob
+definitions:
+  Success:
+    description: The common media type to all request responses for this example (default
+      view)
+    example:
+      ok: false
+    properties:
+      ok:
+        description: Always true
+        example: false
+        type: boolean
+    required:
+    - ok
+    title: 'Mediatype identifier: application/vnd.goa.examples.security.success; view=default'
+    type: object
+info:
+  version: ""
+paths:
+  /jwt:
+    get:
+      description: |-
+        This action is secured with the jwt scheme
+
+        Required security scopes:
+          * `api:access`
+      operationId: jwt#secure
+      parameters:
+      - description: Force auth failure via JWT validation middleware
+        in: query
+        name: fail
+        required: false
+        type: boolean
+      produces:
+      - application/vnd.goa.examples.security.success
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Success'
+        "401":
+          description: Unauthorized
+      security:
+      - jwt:
+        - api:access
+      summary: secure jwt
+      tags:
+      - jwt
+  /jwt/unsecure:
+    get:
+      description: This action does not require auth
+      operationId: jwt#unsecure
+      produces:
+      - application/vnd.goa.examples.security.success
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Success'
+      summary: unsecure jwt
+      tags:
+      - jwt
+produces:
+- application/json
+- application/xml
+- application/gob
+- application/x-gob
+responses:
+  OK:
+    description: OK
+    schema:
+      $ref: '#/definitions/Success'
+  Unauthorized:
+    description: Unauthorized
+securityDefinitions:
+  jwt:
+    description: |2-
+
+
+      **Security Scopes**:
+        * `api:access`: API access
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

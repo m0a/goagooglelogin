@@ -1,38 +1,60 @@
 package main
 
 import (
-	"github.com/goadesign/goa"
+	"encoding/base64"
 
+	jwtgo "github.com/dgrijalva/jwt-go"
+	"github.com/goadesign/goa"
+	"github.com/goadesign/goa/middleware/security/jwt"
 	"github.com/m0a/goagooglelogin/example/app"
 )
 
 // JWTController implements the jwt resource.
 type JWTController struct {
 	*goa.Controller
+	Accounts *map[string]Account
 }
 
 // NewJWTController creates a jwt controller.
-func NewJWTController(service *goa.Service) *JWTController {
-	return &JWTController{Controller: service.NewController("JWTController")}
+func NewJWTController(service *goa.Service, ac *map[string]Account) *JWTController {
+	return &JWTController{
+		Controller: service.NewController("JWTController"),
+		Accounts:   ac,
+	}
 }
 
 // Secure runs the secure action.
 func (c *JWTController) Secure(ctx *app.SecureJWTContext) error {
-	// JWTController_Secure: start_implement
+	jwtContext := jwt.ContextJWT(ctx)
+	claims, ok := jwtContext.Claims.(jwtgo.MapClaims)
+	if !ok {
+		return ctx.Unauthorized()
+	}
+	googleID, ok := claims["sub"].(string)
+	if !ok {
+		return ctx.Unauthorized()
+	}
 
-	// Put your logic here
+	if c.Accounts == nil {
+		return ctx.Unauthorized()
+	}
+	account, ok := (*c.Accounts)[googleID]
+	if !ok {
+		return ctx.Unauthorized()
+	}
 
-	// JWTController_Secure: end_implement
-	res := &app.Success{}
-	return ctx.OK(res)
+	img := base64.StdEncoding.EncodeToString(account.Image)
+	res := app.GoaExamplesSecuritySecure{
+		Name:  &account.Name,
+		Email: &account.Email,
+		Image: &img,
+	}
+	return ctx.OK(&res)
 }
 
 // Unsecure runs the unsecure action.
 func (c *JWTController) Unsecure(ctx *app.UnsecureJWTContext) error {
 	// JWTController_Unsecure: start_implement
-
-	// Put your logic here
-
 	// JWTController_Unsecure: end_implement
 	res := &app.Success{}
 	return ctx.OK(res)

@@ -74,3 +74,27 @@ func MountJWTController(service *goa.Service, ctrl JWTController) {
 	service.Mux.Handle("GET", "/jwt/unsecure", ctrl.MuxHandler("unsecure", h, nil))
 	service.LogInfo("mount", "ctrl", "JWT", "action", "Unsecure", "route", "GET /jwt/unsecure")
 }
+
+// ServeController is the controller interface for the Serve actions.
+type ServeController interface {
+	goa.Muxer
+	goa.FileServer
+}
+
+// MountServeController "mounts" a Serve resource controller on the given service.
+func MountServeController(service *goa.Service, ctrl ServeController) {
+	initService(service)
+	var h goa.Handler
+
+	h = ctrl.FileHandler("/static/*filepath", "./static")
+	service.Mux.Handle("GET", "/static/*filepath", ctrl.MuxHandler("serve", h, nil))
+	service.LogInfo("mount", "ctrl", "Serve", "files", "./static", "route", "GET /static/*filepath")
+
+	h = ctrl.FileHandler("/", "./static/index.html")
+	service.Mux.Handle("GET", "/", ctrl.MuxHandler("serve", h, nil))
+	service.LogInfo("mount", "ctrl", "Serve", "files", "./static/index.html", "route", "GET /")
+
+	h = ctrl.FileHandler("/static/", "static/index.html")
+	service.Mux.Handle("GET", "/static/", ctrl.MuxHandler("serve", h, nil))
+	service.LogInfo("mount", "ctrl", "Serve", "files", "static/index.html", "route", "GET /static/")
+}

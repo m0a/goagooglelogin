@@ -10,6 +10,15 @@
 
 package app
 
+// GoaExamplesSecuritySecure media type (default view)
+//
+// Identifier: application/vnd.goa.examples.security.secure+json; view=default
+type GoaExamplesSecuritySecure struct {
+	Email *string `form:"Email,omitempty" json:"Email,omitempty" xml:"Email,omitempty"`
+	Image *string `form:"Image,omitempty" json:"Image,omitempty" xml:"Image,omitempty"`
+	Name  *string `form:"Name,omitempty" json:"Name,omitempty" xml:"Name,omitempty"`
+}
+
 // The common media type to all request responses for this example (default view)
 //
 // Identifier: application/vnd.goa.examples.security.success; view=default

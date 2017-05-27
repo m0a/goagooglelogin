@@ -3,6 +3,7 @@ package goagooglelogin
 import (
 	"context"
 	"net/http"
+	"os"
 
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/goadesign/goa"
@@ -12,24 +13,26 @@ import (
 type (
 	// GoaGloginConf middleware config
 	GoaGloginConf struct {
-		LoginURL     string // defualt: /login
-		CallbackURL  string // default /oauth2callback
-		StateSigned  string // state JWT key
-		LoginSigned  string //login JWT key
-		ExpireMinute int    // default 2
-		SaveUserInfo func(googleUserID string, userinfo *oauth2.Userinfoplus, tokenInfo *oauth2.Tokeninfo, conf *GoaGloginConf) (jwt.Claims, error)
+		LoginURL           string // defualt: /login
+		CallbackURL        string // default /oauth2callback
+		StateSigned        string // state JWT key
+		LoginSigned        string // login JWT key
+		GoogleClientID     string
+		GoogleClientSecret string
+		CreateClaims       func(googleUserID string, userinfo *oauth2.Userinfoplus, tokenInfo *oauth2.Tokeninfo) (jwt.Claims, error)
 	}
 )
 
 var (
 	// DefaultGoaGloginConf is the default googlelogin middleware config.
 	DefaultGoaGloginConf = GoaGloginConf{
-		LoginURL:     "/login",
-		CallbackURL:  "/oauth2callback",
-		StateSigned:  "testa1234",
-		LoginSigned:  "12345678test",
-		ExpireMinute: 2,
-		SaveUserInfo: DefaultSaveUserInfo,
+		LoginURL:           "/login",
+		CallbackURL:        "/oauth2callback",
+		StateSigned:        "f23oj3242jkl",
+		LoginSigned:        "dqw324124123",
+		GoogleClientID:     os.Getenv("OPENID_GOOGLE_CLIENT"),
+		GoogleClientSecret: os.Getenv("OPENID_GOOGLE_SECRET"),
+		CreateClaims:       DefaultCreateClaims,
 	}
 )
 

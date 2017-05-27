@@ -2,8 +2,13 @@ package main
 
 import (
 	"fmt"
-	"os"
+	"io/ioutil"
+	"net/http"
+	"time"
 
+	oauth2 "google.golang.org/api/oauth2/v2"
+
+	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/goadesign/goa"
 	"github.com/goadesign/goa/middleware"
 	"github.com/m0a/goagooglelogin"
@@ -25,28 +30,56 @@ func main() {
 	service.Use(middleware.ErrorHandler(service, true))
 	service.Use(middleware.Recover())
 
+	accounts := map[string]Account{}
+
 	conf := &goagooglelogin.DefaultGoaGloginConf
+	conf.LoginSigned = "xsdsafasd"
+	conf.StateSigned = "sddwaseq2"
+	conf.CreateClaims = func(googleUserID string,
+		userinfo *oauth2.Userinfoplus, tokenInfo *oauth2.Tokeninfo) (claims jwt.Claims, err error) {
+		resp, err := http.Get(userinfo.Picture)
+		if err != nil {
+			return nil, err
+
+		}
+		defer resp.Body.Close()
+		picture, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		fmt.Println(len(picture))
+
+		// sample save code
+		_, ok := accounts[googleUserID]
+		if !ok {
+			account := Account{
+				GoogleUserID: googleUserID,
+				Image:        picture,
+				Email:        userinfo.Email,
+				Name:         userinfo.Name,
+				Created:      time.Now(),
+			}
+			accounts[googleUserID] = account
+		}
+
+		return goagooglelogin.MakeClaim("api:access", googleUserID, 10), nil
+	}
+
 	service.Use(goagooglelogin.WithConfig(service, conf))
 
 	// Mount security middlewares
 	app.UseJWTMiddleware(service, goagooglelogin.NewJWTMiddleware(conf, app.NewJWTSecurity()))
 
 	// Mount "JWT" controller
-	c3 := NewJWTController(service)
-	// exitOnFailure(err)
-	app.MountJWTController(service, c3)
+	c1 := NewJWTController(service, &accounts)
+	app.MountJWTController(service, c1)
+
+	c2 := NewServeController(service)
+	app.MountServeController(service, c2)
 
 	// Start service
 	if err := service.ListenAndServe(":8080"); err != nil {
 		service.LogError("startup", "err", err)
 	}
-}
-
-// exitOnFailure prints a fatal error message and exits the process with status 1.
-func exitOnFailure(err error) {
-	if err == nil {
-		return
-	}
-	fmt.Fprintf(os.Stderr, "[CRIT] %s", err.Error())
-	os.Exit(1)
 }

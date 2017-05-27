@@ -14,7 +14,6 @@ import (
 	"context"
 	"github.com/goadesign/goa"
 	"net/http"
-	"strconv"
 )
 
 // SecureJWTContext provides the jwt secure action context.
@@ -22,7 +21,6 @@ type SecureJWTContext struct {
 	context.Context
 	*goa.ResponseData
 	*goa.RequestData
-	Fail *bool
 }
 
 // NewSecureJWTContext parses the incoming request URL and body, performs validations and creates the
@@ -34,22 +32,12 @@ func NewSecureJWTContext(ctx context.Context, r *http.Request, service *goa.Serv
 	req := goa.ContextRequest(ctx)
 	req.Request = r
 	rctx := SecureJWTContext{Context: ctx, ResponseData: resp, RequestData: req}
-	paramFail := req.Params["fail"]
-	if len(paramFail) > 0 {
-		rawFail := paramFail[0]
-		if fail, err2 := strconv.ParseBool(rawFail); err2 == nil {
-			tmp1 := &fail
-			rctx.Fail = tmp1
-		} else {
-			err = goa.MergeErrors(err, goa.InvalidParamTypeError("fail", rawFail, "boolean"))
-		}
-	}
 	return &rctx, err
 }
 
 // OK sends a HTTP response with status code 200.
-func (ctx *SecureJWTContext) OK(r *Success) error {
-	ctx.ResponseData.Header().Set("Content-Type", "application/vnd.goa.examples.security.success")
+func (ctx *SecureJWTContext) OK(r *GoaExamplesSecuritySecure) error {
+	ctx.ResponseData.Header().Set("Content-Type", "application/vnd.goa.examples.security.secure+json")
 	return ctx.ResponseData.Service.Send(ctx.Context, 200, r)
 }
 

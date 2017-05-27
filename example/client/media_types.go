@@ -14,6 +14,22 @@ import (
 	"net/http"
 )
 
+// GoaExamplesSecuritySecure media type (default view)
+//
+// Identifier: application/vnd.goa.examples.security.secure+json; view=default
+type GoaExamplesSecuritySecure struct {
+	Email *string `form:"Email,omitempty" json:"Email,omitempty" xml:"Email,omitempty"`
+	Image *string `form:"Image,omitempty" json:"Image,omitempty" xml:"Image,omitempty"`
+	Name  *string `form:"Name,omitempty" json:"Name,omitempty" xml:"Name,omitempty"`
+}
+
+// DecodeGoaExamplesSecuritySecure decodes the GoaExamplesSecuritySecure instance encoded in resp body.
+func (c *Client) DecodeGoaExamplesSecuritySecure(resp *http.Response) (*GoaExamplesSecuritySecure, error) {
+	var decoded GoaExamplesSecuritySecure
+	err := c.Decoder.Decode(&decoded, resp.Body, resp.Header.Get("Content-Type"))
+	return &decoded, err
+}
+
 // The common media type to all request responses for this example (default view)
 //
 // Identifier: application/vnd.goa.examples.security.success; view=default

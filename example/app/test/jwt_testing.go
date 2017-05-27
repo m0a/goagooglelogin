@@ -28,7 +28,7 @@ import (
 // It returns the response writer so it's possible to inspect the response headers and the media type struct written to the response.
 // If ctx is nil then context.Background() is used.
 // If service is nil then a default service is created.
-func SecureJWTOK(t goatest.TInterface, ctx context.Context, service *goa.Service, ctrl app.JWTController, fail *bool) (http.ResponseWriter, *app.Success) {
+func SecureJWTOK(t goatest.TInterface, ctx context.Context, service *goa.Service, ctrl app.JWTController) (http.ResponseWriter, *app.GoaExamplesSecuritySecure) {
 	// Setup service
 	var (
 		logBuf bytes.Buffer
@@ -48,24 +48,14 @@ func SecureJWTOK(t goatest.TInterface, ctx context.Context, service *goa.Service
 
 	// Setup request context
 	rw := httptest.NewRecorder()
-	query := url.Values{}
-	if fail != nil {
-		sliceVal := []string{fmt.Sprintf("%v", *fail)}
-		query["fail"] = sliceVal
-	}
 	u := &url.URL{
-		Path:     fmt.Sprintf("/jwt"),
-		RawQuery: query.Encode(),
+		Path: fmt.Sprintf("/jwt"),
 	}
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
 		panic("invalid test " + err.Error()) // bug
 	}
 	prms := url.Values{}
-	if fail != nil {
-		sliceVal := []string{fmt.Sprintf("%v", *fail)}
-		prms["fail"] = sliceVal
-	}
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -85,12 +75,12 @@ func SecureJWTOK(t goatest.TInterface, ctx context.Context, service *goa.Service
 	if rw.Code != 200 {
 		t.Errorf("invalid response status code: got %+v, expected 200", rw.Code)
 	}
-	var mt *app.Success
+	var mt *app.GoaExamplesSecuritySecure
 	if resp != nil {
 		var ok bool
-		mt, ok = resp.(*app.Success)
+		mt, ok = resp.(*app.GoaExamplesSecuritySecure)
 		if !ok {
-			t.Fatalf("invalid response media: got %+v, expected instance of app.Success", resp)
+			t.Fatalf("invalid response media: got %+v, expected instance of app.GoaExamplesSecuritySecure", resp)
 		}
 	}
 
@@ -102,7 +92,7 @@ func SecureJWTOK(t goatest.TInterface, ctx context.Context, service *goa.Service
 // It returns the response writer so it's possible to inspect the response headers.
 // If ctx is nil then context.Background() is used.
 // If service is nil then a default service is created.
-func SecureJWTUnauthorized(t goatest.TInterface, ctx context.Context, service *goa.Service, ctrl app.JWTController, fail *bool) http.ResponseWriter {
+func SecureJWTUnauthorized(t goatest.TInterface, ctx context.Context, service *goa.Service, ctrl app.JWTController) http.ResponseWriter {
 	// Setup service
 	var (
 		logBuf bytes.Buffer
@@ -122,24 +112,14 @@ func SecureJWTUnauthorized(t goatest.TInterface, ctx context.Context, service *g
 
 	// Setup request context
 	rw := httptest.NewRecorder()
-	query := url.Values{}
-	if fail != nil {
-		sliceVal := []string{fmt.Sprintf("%v", *fail)}
-		query["fail"] = sliceVal
-	}
 	u := &url.URL{
-		Path:     fmt.Sprintf("/jwt"),
-		RawQuery: query.Encode(),
+		Path: fmt.Sprintf("/jwt"),
 	}
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
 		panic("invalid test " + err.Error()) // bug
 	}
 	prms := url.Values{}
-	if fail != nil {
-		sliceVal := []string{fmt.Sprintf("%v", *fail)}
-		prms["fail"] = sliceVal
-	}
 	if ctx == nil {
 		ctx = context.Background()
 	}

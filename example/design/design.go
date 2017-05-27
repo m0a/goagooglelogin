@@ -10,6 +10,12 @@ var JWT = JWTSecurity("jwt", func() {
 	Scope("api:access", "API access") // Define "api:access" scope
 })
 
+// web static file serve
+var _ = Resource("serve", func() {
+	Files("/", "./static/index.html")
+	Files("/static/*filepath", "./static")
+})
+
 // Resource jwt uses the JWTSecurity security scheme.
 var _ = Resource("jwt", func() {
 	Description("This resource uses JWT to secure its endpoints")
@@ -22,10 +28,7 @@ var _ = Resource("jwt", func() {
 	Action("secure", func() {
 		Description("This action is secured with the jwt scheme")
 		Routing(GET("/jwt"))
-		Params(func() {
-			Param("fail", Boolean, "Force auth failure via JWT validation middleware")
-		})
-		Response(OK)
+		Response(OK, SecureMedia)
 		Response(Unauthorized)
 	})
 
@@ -34,6 +37,19 @@ var _ = Resource("jwt", func() {
 		Routing(GET("/jwt/unsecure"))
 		NoSecurity() // Override the need for auth
 		Response(OK)
+	})
+})
+
+var SecureMedia = MediaType("application/vnd.goa.examples.security.secure+json", func() {
+	Attributes(func() {
+		Attribute("Name", String)
+		Attribute("Email", String)
+		Attribute("Image", String)
+	})
+	View("default", func() {
+		Attribute("Name", String)
+		Attribute("Email", String)
+		Attribute("Image", String)
 	})
 })
 

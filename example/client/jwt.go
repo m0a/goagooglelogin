@@ -15,7 +15,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strconv"
 )
 
 // SecureJWTPath computes a request path to the secure action of jwt.
@@ -25,8 +24,8 @@ func SecureJWTPath() string {
 }
 
 // This action is secured with the jwt scheme
-func (c *Client) SecureJWT(ctx context.Context, path string, fail *bool) (*http.Response, error) {
-	req, err := c.NewSecureJWTRequest(ctx, path, fail)
+func (c *Client) SecureJWT(ctx context.Context, path string) (*http.Response, error) {
+	req, err := c.NewSecureJWTRequest(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -34,18 +33,12 @@ func (c *Client) SecureJWT(ctx context.Context, path string, fail *bool) (*http.
 }
 
 // NewSecureJWTRequest create the request corresponding to the secure action endpoint of the jwt resource.
-func (c *Client) NewSecureJWTRequest(ctx context.Context, path string, fail *bool) (*http.Request, error) {
+func (c *Client) NewSecureJWTRequest(ctx context.Context, path string) (*http.Request, error) {
 	scheme := c.Scheme
 	if scheme == "" {
 		scheme = "http"
 	}
 	u := url.URL{Host: c.Host, Scheme: scheme, Path: path}
-	values := u.Query()
-	if fail != nil {
-		tmp4 := strconv.FormatBool(*fail)
-		values.Set("fail", tmp4)
-	}
-	u.RawQuery = values.Encode()
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
 		return nil, err

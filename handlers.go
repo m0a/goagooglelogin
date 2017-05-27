@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"os"
 	"time"
 
 	"golang.org/x/oauth2"
@@ -20,9 +19,7 @@ import (
 
 var (
 	conf = oauth2.Config{
-		ClientID:     os.Getenv("OPENID_GOOGLE_CLIENT"),
-		ClientSecret: os.Getenv("OPENID_GOOGLE_SECRET"),
-		Scopes:       []string{"openid", "email", "profile"},
+		Scopes: []string{"openid", "email", "profile"},
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  "https://accounts.google.com/o/oauth2/v2/auth",
 			TokenURL: "https://www.googleapis.com/oauth2/v4/token",
@@ -32,6 +29,8 @@ var (
 
 // makeAuthHandler is created redirectURL and access redirectURL
 func makeAuthHandler(service *goa.Service, loginConf *GoaGloginConf) goa.MuxHandler {
+	conf.ClientID = loginConf.GoogleClientID
+	conf.ClientSecret = loginConf.GoogleClientSecret
 	return func(w http.ResponseWriter, r *http.Request, _ url.Values) {
 		nextURL := r.URL.Query().Get("next_url")
 		if nextURL == "" {
@@ -66,25 +65,25 @@ func makeAuthHandler(service *goa.Service, loginConf *GoaGloginConf) goa.MuxHand
 	}
 }
 
-func MakeClaim(scopes string, googleId string, conf *GoaGloginConf) jwt.Claims {
-	inXm := time.Now().Add(time.Duration(conf.ExpireMinute) * time.Minute).Unix()
-	claims := jwt.MapClaims{
-		"iss":    "goagooglelogin",      // who creates the token and signs it
+// MakeClaim is CreateFunction for login JWT claims
+func MakeClaim(scopes string, googleID string, expireMinute int) jwt.Claims {
+
+	inXm := time.Now().Add(time.Duration(expireMinute) * time.Minute).Unix()
+	return jwt.MapClaims{
+		"iss":    "goaglogin",           // who creates the token and signs it
 		"exp":    inXm,                  // time when the token will expire (X minutes from now)
 		"jti":    uuid.NewV4().String(), // a unique identifier for the token
 		"iat":    time.Now().Unix(),     // when the token was issued/created (now)
-		"sub":    googleId,              // the subject/principal is whom the token is about
+		"sub":    googleID,              // the subject/principal is whom the token is about
 		"scopes": scopes,                // token scope - not a standard claim
 	}
-
-	return claims
 }
 
-// DefaultSaveUserInfo is basic save user info function
-func DefaultSaveUserInfo(googleUserID string,
+// DefaultCreateClaims is basic save user info function
+func DefaultCreateClaims(googleUserID string,
 	userInfo *v2.Userinfoplus,
 	tokenInfo *v2.Tokeninfo,
-	conf *GoaGloginConf) (claims jwt.Claims, err error) {
+) (claims jwt.Claims, err error) {
 
 	resp, err := http.Get(userInfo.Picture)
 	if err != nil {
@@ -115,7 +114,7 @@ func DefaultSaveUserInfo(googleUserID string,
 	// 		return err
 	// 	}
 	// }
-	return MakeClaim("api:access", googleUserID, conf), nil
+	return MakeClaim("api:access", googleUserID, 10), nil
 }
 
 func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) goa.MuxHandler {
@@ -188,7 +187,7 @@ func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) g
 			return
 		}
 
-		if loginConf.SaveUserInfo == nil {
+		if loginConf.CreateClaims == nil {
 			http.Error(w, "expect define SaveUserInfo", http.StatusUnauthorized)
 			return
 		}
@@ -207,9 +206,8 @@ func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) g
 		// }
 
 		googleUserID := tokenInfo.UserId
-		// service.LogInfo("mount", "middleware", "MakeOauth2callbackHandler", "SaveUserInfo googleUserID")
-		service.LogInfo("mount", "middleware", "MakeOauth2callbackHandler", "SaveUserInfo googleUserID", googleUserID)
-		claims, err := loginConf.SaveUserInfo(googleUserID, userInfo, tokenInfo, loginConf)
+		service.LogInfo("mount", "middleware", "MakeOauth2callbackHandler", "CreateClaims googleUserID", googleUserID)
+		claims, err := loginConf.CreateClaims(googleUserID, userInfo, tokenInfo)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
@@ -252,7 +250,7 @@ func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) g
 		signedToken := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
 		signedTokenStr, err := signedToken.SignedString([]byte(loginConf.LoginSigned))
 		if err != nil {
-			http.Error(w, err.Error()+"oh! no", http.StatusUnauthorized)
+			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
 		}
 

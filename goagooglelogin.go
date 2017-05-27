@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/goadesign/goa"
 	"google.golang.org/api/oauth2/v2"
 )
@@ -11,12 +12,12 @@ import (
 type (
 	// GoaGloginConf middleware config
 	GoaGloginConf struct {
-		LoginURL     string
-		CallbackURL  string
-		StateSigned  string
-		LoginSigned  string
-		ExpireMinute int
-		SaveUserInfo func(googleUserID string, userinfo *oauth2.Userinfoplus, tokenInfo *oauth2.Tokeninfo) error
+		LoginURL     string // defualt: /login
+		CallbackURL  string // default /oauth2callback
+		StateSigned  string // state JWT key
+		LoginSigned  string //login JWT key
+		ExpireMinute int    // default 2
+		SaveUserInfo func(googleUserID string, userinfo *oauth2.Userinfoplus, tokenInfo *oauth2.Tokeninfo, conf *GoaGloginConf) (jwt.Claims, error)
 	}
 )
 
@@ -42,11 +43,11 @@ func WithConfig(service *goa.Service, conf *GoaGloginConf) goa.Middleware {
 		conf = &DefaultGoaGloginConf
 	}
 	// start url redirect to google
-	service.Mux.Handle("GET", conf.LoginURL, MakeAuthHandler(service, conf))
+	service.Mux.Handle("GET", conf.LoginURL, makeAuthHandler(service, conf))
 	service.LogInfo("mount", "middleware", "goagooglelogin", "route", "GET "+conf.LoginURL)
 
 	// callback url and state check and get AccessToken
-	service.Mux.Handle("GET", conf.CallbackURL, MakeOauth2callbackHandler(service, conf))
+	service.Mux.Handle("GET", conf.CallbackURL, makeOauth2callbackHandler(service, conf))
 	service.LogInfo("mount", "middleware", "goagooglelogin", "route", "GET "+conf.CallbackURL)
 
 	// 横断的には何もしない

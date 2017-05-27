@@ -30,10 +30,15 @@ var (
 	}
 )
 
-// MakeAuthHandler is created redirectURL and access redirectURL
-func MakeAuthHandler(service *goa.Service, loginConf *GoaGloginConf) goa.MuxHandler {
+// makeAuthHandler is created redirectURL and access redirectURL
+func makeAuthHandler(service *goa.Service, loginConf *GoaGloginConf) goa.MuxHandler {
 	return func(w http.ResponseWriter, r *http.Request, _ url.Values) {
-		redirectURL := r.URL
+		nextURL := r.URL.Query().Get("next_url")
+		if nextURL == "" {
+			nextURL = "/"
+		}
+
+		redirectURL := url.URL{}
 		redirectURL.Path = loginConf.CallbackURL
 		redirectURL.Host = r.Host
 		if r.TLS == nil {
@@ -44,8 +49,9 @@ func MakeAuthHandler(service *goa.Service, loginConf *GoaGloginConf) goa.MuxHand
 
 		conf.RedirectURL = redirectURL.String()
 		service.LogInfo("mount", "middleware", "goagooglelogin", "redirectURL.String()", redirectURL.String())
-		claims := &jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Duration(30) * time.Second).Unix(),
+		claims := &jwt.MapClaims{
+			"exp":          time.Now().Add(time.Duration(30) * time.Second).Unix(),
+			"redirect_url": nextURL,
 		}
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 		state, err := token.SignedString([]byte(loginConf.StateSigned))
@@ -60,21 +66,40 @@ func MakeAuthHandler(service *goa.Service, loginConf *GoaGloginConf) goa.MuxHand
 	}
 }
 
-func DefaultSaveUserInfo(googleUserID string, userInfo *v2.Userinfoplus, tokenInfo *v2.Tokeninfo) error {
+func MakeClaim(scopes string, googleId string, conf *GoaGloginConf) jwt.Claims {
+	inXm := time.Now().Add(time.Duration(conf.ExpireMinute) * time.Minute).Unix()
+	claims := jwt.MapClaims{
+		"iss":    "goagooglelogin",      // who creates the token and signs it
+		"exp":    inXm,                  // time when the token will expire (X minutes from now)
+		"jti":    uuid.NewV4().String(), // a unique identifier for the token
+		"iat":    time.Now().Unix(),     // when the token was issued/created (now)
+		"sub":    googleId,              // the subject/principal is whom the token is about
+		"scopes": scopes,                // token scope - not a standard claim
+	}
+
+	return claims
+}
+
+// DefaultSaveUserInfo is basic save user info function
+func DefaultSaveUserInfo(googleUserID string,
+	userInfo *v2.Userinfoplus,
+	tokenInfo *v2.Tokeninfo,
+	conf *GoaGloginConf) (claims jwt.Claims, err error) {
 
 	resp, err := http.Get(userInfo.Picture)
 	if err != nil {
-		return err
+		return
 	}
 
 	defer resp.Body.Close()
 	picture, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		return
 	}
 
 	fmt.Println(len(picture))
 
+	// sample save code
 	// account := &models.Account{}
 	// account, err = models.AccountByGoogleUserID(option.db, googleUserID)
 	// if err != nil {
@@ -87,16 +112,13 @@ func DefaultSaveUserInfo(googleUserID string, userInfo *v2.Userinfoplus, tokenIn
 	// 	}
 	// 	err = account.Insert(option.db)
 	// 	if err != nil {
-	// 		http.Error(w, err.Error(), http.StatusUnauthorized)
-	// 		return
+	// 		return err
 	// 	}
 	// }
-
-	return nil
+	return MakeClaim("api:access", googleUserID, conf), nil
 }
 
-// MakeOauth2callbackHandler callback url and state check and get AccessToken
-func MakeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) goa.MuxHandler {
+func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) goa.MuxHandler {
 	return func(w http.ResponseWriter, r *http.Request, _ url.Values) {
 
 		if loginConf == nil {
@@ -109,6 +131,24 @@ func MakeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) g
 		})
 		if !t.Valid {
 			http.Error(w, "state is invalid.", http.StatusUnauthorized)
+			return
+		}
+
+		mapClaims, ok := t.Claims.(jwt.MapClaims)
+		if !ok {
+			http.Error(w, "claims is invalid.", http.StatusUnauthorized)
+			return
+		}
+		service.LogInfo("mount", "middleware", "makeOauth2callbackHandler", "mapClaims", fmt.Sprintf("%#v", mapClaims))
+		temp, ok := mapClaims["redirect_url"]
+		if !ok {
+			http.Error(w, "mapClaims[redirect_url] is invalid.", http.StatusUnauthorized)
+			return
+		}
+
+		redirectURL, ok := temp.(string)
+		if !ok {
+			http.Error(w, "mapClaims[redirect_url] string is invalid.", http.StatusUnauthorized)
 			return
 		}
 
@@ -169,7 +209,7 @@ func MakeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) g
 		googleUserID := tokenInfo.UserId
 		// service.LogInfo("mount", "middleware", "MakeOauth2callbackHandler", "SaveUserInfo googleUserID")
 		service.LogInfo("mount", "middleware", "MakeOauth2callbackHandler", "SaveUserInfo googleUserID", googleUserID)
-		err = loginConf.SaveUserInfo(googleUserID, userInfo, tokenInfo)
+		claims, err := loginConf.SaveUserInfo(googleUserID, userInfo, tokenInfo, loginConf)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
@@ -199,15 +239,15 @@ func MakeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) g
 		// state, err := token.SignedString([]byte(loginConf.StateSigned))
 
 		// token := jwt.New(jwt.SigningMethodHS512)
-		inXm := time.Now().Add(time.Duration(loginConf.ExpireMinute) * time.Minute).Unix()
-		claims := jwt.MapClaims{
-			"iss":    "goagooglelogin",      // who creates the token and signs it
-			"exp":    inXm,                  // time when the token will expire (X minutes from now)
-			"jti":    uuid.NewV4().String(), // a unique identifier for the token
-			"iat":    time.Now().Unix(),     // when the token was issued/created (now)
-			"sub":    googleUserID,          // the subject/principal is whom the token is about
-			"scopes": "api:access",          // token scope - not a standard claim
-		}
+		// inXm := time.Now().Add(time.Duration(loginConf.ExpireMinute) * time.Minute).Unix()
+		// claims := jwt.MapClaims{
+		// 	"iss":    "goagooglelogin",      // who creates the token and signs it
+		// 	"exp":    inXm,                  // time when the token will expire (X minutes from now)
+		// 	"jti":    uuid.NewV4().String(), // a unique identifier for the token
+		// 	"iat":    time.Now().Unix(),     // when the token was issued/created (now)
+		// 	"sub":    googleUserID,          // the subject/principal is whom the token is about
+		// 	"scopes": "api:access",          // token scope - not a standard claim
+		// }
 
 		signedToken := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
 		signedTokenStr, err := signedToken.SignedString([]byte(loginConf.LoginSigned))
@@ -243,7 +283,7 @@ func MakeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) g
 
 		items := templateItem{
 			SignedToken: signedTokenStr,
-			RedirectURL: "/",
+			RedirectURL: redirectURL,
 		}
 
 		err = tmpl.Execute(w, items)

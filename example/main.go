@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"time"
 
 	oauth2 "google.golang.org/api/oauth2/v2"
@@ -35,6 +36,9 @@ func main() {
 	conf := &goagooglelogin.DefaultGoaGloginConf
 	conf.LoginSigned = "xsdsafasd"
 	conf.StateSigned = "sddwaseq2"
+	conf.GoogleClientID = os.Getenv("OPENID_GOOGLE_CLIENT")
+	conf.GoogleClientSecret = os.Getenv("OPENID_GOOGLE_SECRET")
+
 	conf.CreateClaims = func(googleUserID string,
 		userinfo *oauth2.Userinfoplus, tokenInfo *oauth2.Tokeninfo) (claims jwt.Claims, err error) {
 		resp, err := http.Get(userinfo.Picture)

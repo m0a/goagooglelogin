@@ -2,10 +2,11 @@
 Goa's googlelogin middlewae
 
 
-ポイント
-googlelogin時に検証用のJWTを発行することで一時的なdb保存を不要とする。
-googleloginを行い、対応するJWTを発行するまでの処理を行う
-JWTにはgoogleidを含める。
+簡単にgoogleloginを行うミドルウェアを作りました。
+JWTを発行してsateの検証を行うためDBへの一時保存が不要なほか
+login後にもJWTを発行することでセッション管理も不要になっています。
+
+
 
 
 ```
@@ -29,4 +30,3 @@ note right of End: sessonStorageにJWT(2)を保存
 End -> WebApp: redirect "/" 
 note right of End: 以降のアクセスにJWT(2)を利用
 
-```

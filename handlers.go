@@ -192,19 +192,6 @@ func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) g
 			return
 		}
 
-		// resp, err := http.Get(userInfo.Picture)
-		// if err != nil {
-		// 	http.Error(w, err.Error(), http.StatusUnauthorized)
-		// 	return
-		// }
-
-		// defer resp.Body.Close()
-		// picture, err := ioutil.ReadAll(resp.Body)
-		// if err != nil {
-		// 	http.Error(w, err.Error(), http.StatusUnauthorized)
-		// 	return
-		// }
-
 		googleUserID := tokenInfo.UserId
 		service.LogInfo("mount", "middleware", "MakeOauth2callbackHandler", "CreateClaims googleUserID", googleUserID)
 		claims, err := loginConf.CreateClaims(googleUserID, userInfo, tokenInfo)
@@ -212,40 +199,6 @@ func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) g
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
 		}
-
-		// account := &models.Account{}
-		// account, err = models.AccountByGoogleUserID(option.db, googleUserID)
-		// if err != nil {
-		// 	account = &models.Account{
-		// 		GoogleUserID: googleUserID,
-		// 		Image:        picture,
-		// 		Email:        userInfo.Email,
-		// 		Name:         userInfo.Name,
-		// 		Created:      time.Now(),
-		// 	}
-		// 	err = account.Insert(option.db)
-		// 	if err != nil {
-		// 		http.Error(w, err.Error(), http.StatusUnauthorized)
-		// 		return
-		// 	}
-		// }
-
-		// claims := &jwt.StandardClaims{
-		// 	ExpiresAt: time.Now().Add(time.Duration(30) * time.Second).Unix(),
-		// }
-		// token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-		// state, err := token.SignedString([]byte(loginConf.StateSigned))
-
-		// token := jwt.New(jwt.SigningMethodHS512)
-		// inXm := time.Now().Add(time.Duration(loginConf.ExpireMinute) * time.Minute).Unix()
-		// claims := jwt.MapClaims{
-		// 	"iss":    "goagooglelogin",      // who creates the token and signs it
-		// 	"exp":    inXm,                  // time when the token will expire (X minutes from now)
-		// 	"jti":    uuid.NewV4().String(), // a unique identifier for the token
-		// 	"iat":    time.Now().Unix(),     // when the token was issued/created (now)
-		// 	"sub":    googleUserID,          // the subject/principal is whom the token is about
-		// 	"scopes": "api:access",          // token scope - not a standard claim
-		// }
 
 		signedToken := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
 		signedTokenStr, err := signedToken.SignedString([]byte(loginConf.LoginSigned))
@@ -263,7 +216,9 @@ func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) g
 		<script>
 			signedtoken ="{{.SignedToken}}";
 			sessionStorage.setItem('signedtoken',signedtoken);
-			let data = sessionStorage.getItem('signedtoken');
+			let token = sessionStorage.getItem('signedtoken');
+			var extensionId = "{{.ExtensionID}}";
+			chrome.runtime.sendMessage(extensionId, { jwt: token });
 			location.href = '{{.RedirectURL}}';
 		</script>	
 	</head>
@@ -277,11 +232,13 @@ func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) g
 		type templateItem struct {
 			SignedToken string
 			RedirectURL string
+			ExtensionID string
 		}
 
 		items := templateItem{
 			SignedToken: signedTokenStr,
 			RedirectURL: redirectURL,
+			ExtensionID: loginConf.ExtensionID,
 		}
 
 		err = tmpl.Execute(w, items)

@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<script>
+		signedtoken = "{{.SignedToken}}";
+		sessionStorage.setItem('signedtoken', signedtoken);
+		let token = sessionStorage.getItem('signedtoken');
+
+		var extensionId = "abcdefghijklmnoabcdefhijklmnoabc";
+		chrome.runtime.sendMessage(extensionId, { jwt: token });
+		location.href = '{{.RedirectURL}}';
+	</script>
+</head>
+
+</html>

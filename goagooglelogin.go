@@ -20,6 +20,7 @@ type (
 		GoogleClientID     string
 		GoogleClientSecret string
 		CreateClaims       func(googleUserID string, userinfo *oauth2.Userinfoplus, tokenInfo *oauth2.Tokeninfo) (jwt.Claims, error)
+		ExtensionID        string
 	}
 )
 
@@ -33,6 +34,7 @@ var (
 		GoogleClientID:     os.Getenv("OPENID_GOOGLE_CLIENT"),
 		GoogleClientSecret: os.Getenv("OPENID_GOOGLE_SECRET"),
 		CreateClaims:       DefaultCreateClaims,
+		ExtensionID:        "",
 	}
 )
 

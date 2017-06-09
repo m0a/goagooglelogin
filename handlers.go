@@ -218,7 +218,9 @@ func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) g
 			sessionStorage.setItem('signedtoken',signedtoken);
 			let token = sessionStorage.getItem('signedtoken');
 			var extensionId = "{{.ExtensionID}}";
-			chrome.runtime.sendMessage(extensionId, { jwt: token });
+			if (extensionId !== "") {
+				chrome.runtime.sendMessage(extensionId, { jwt: token });
+			}
 			location.href = '{{.RedirectURL}}';
 		</script>	
 	</head>

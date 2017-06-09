@@ -1,6 +1,7 @@
 
-Goa's googlelogin middlewae
+# googlelogin goa middleware
 
+goaでお手軽google loginを行うミドルウェアを作ってみました。
 
 
 goaで手軽にwebAPIをつくれるのはいいのですが、ユーザ認証が意外と面倒です。
@@ -261,6 +262,26 @@ conf := &goagooglelogin.DefaultGoaGloginConf
 Claim作成処理は``goagooglelogin.MakeClaim``でほとんど行いますので、
 基本的にはDBの保存処理を書くことになります。
 
+上記設定は一つの構造体に集約してます
+
+```go
+	GoaGloginConf struct {
+		LoginURL           string // defualt: /login
+		CallbackURL        string // default: /oauth2callback
+		StateSigned        string // state JWT key
+		LoginSigned        string // login JWT key
+		GoogleClientID     string
+		GoogleClientSecret string
+		CreateClaims       func(googleUserID string, userinfo *oauth2.Userinfoplus, tokenInfo *oauth2.Tokeninfo) (jwt.Claims, error)
+	}
+```
+
+``loginURL``と``CallbackURL``はデフォルトのまま使ったほうがいいと思います。
+
+上記設定であれば最初に`/lgoin?next_url=/`でログイン処理が開始します。
+``next_url``はログイン完了後sessionStorageにトークンを保存した後にリダイレクトするurlとなります。
+あとはコールバック先としてログイン画面表示後に、``/oauth2callback``に遷移します。
+
 
 ## コントローラーからのアクセス
 
@@ -331,6 +352,11 @@ https://github.com/m0a/goagooglelogin/tree/master/example
 # 参考情報
 
 あとで記述
+
+
+
+
+
 
 
 

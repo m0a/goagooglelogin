@@ -34,8 +34,8 @@ func main() {
 	accounts := map[string]Account{}
 
 	conf := &goagooglelogin.DefaultGoaGloginConf
-	conf.LoginSigned = "xsdsafasd"
-	conf.StateSigned = "sddwaseq2"
+	conf.LoginSigned = "eeee33344445"
+	conf.StateSigned = "sddwsdfaseq2"
 	conf.GoogleClientID = os.Getenv("OPENID_GOOGLE_CLIENT")
 	conf.GoogleClientSecret = os.Getenv("OPENID_GOOGLE_SECRET")
 

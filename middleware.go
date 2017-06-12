@@ -9,5 +9,6 @@ func NewJWTMiddleware(conf *GoaGloginConf, newJWTSecurity *goa.JWTSecurity) goa.
 	if conf != nil {
 		conf = &DefaultGoaGloginConf
 	}
-	return jwt.New(conf.LoginSigned, nil, newJWTSecurity)
+	keys := []jwt.Key{conf.LoginSigned}
+	return jwt.New(jwt.NewSimpleResolver(keys), nil, newJWTSecurity)
 }

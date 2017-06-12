@@ -128,6 +128,10 @@ func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) g
 		t, err := jwt.Parse(state, func(*jwt.Token) (interface{}, error) {
 			return []byte(loginConf.StateSigned), nil
 		})
+		if err != nil {
+			http.Error(w, "jwt.Parse err.", http.StatusUnauthorized)
+			return
+		}
 		if !t.Valid {
 			http.Error(w, "state is invalid.", http.StatusUnauthorized)
 			return

@@ -6,7 +6,7 @@ import (
 )
 
 func NewJWTMiddleware(conf *GoaGloginConf, newJWTSecurity *goa.JWTSecurity) goa.Middleware {
-	if conf != nil {
+	if conf == nil {
 		conf = &DefaultGoaGloginConf
 	}
 	keys := []jwt.Key{conf.LoginSigned}

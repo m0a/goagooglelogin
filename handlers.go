@@ -2,6 +2,7 @@ package goagooglelogin
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"io/ioutil"
@@ -221,10 +222,13 @@ func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) g
 			signedtoken ="{{.SignedToken}}";
 			sessionStorage.setItem('signedtoken',signedtoken);
 			let token = sessionStorage.getItem('signedtoken');
-			var extensionId = "{{.ExtensionID}}";
-			if (extensionId !== "") {
-				chrome.runtime.sendMessage(extensionId, { jwt: token });
+
+			let extensionIds = JSON.parse({{.ExtensionIDs}});
+			for (let id of extensionIds) {
+				console.log('send to: '+ id + ' jwt: '+ token);
+				chrome.runtime.sendMessage(id, { jwt: token });
 			}
+
 			location.href = '{{.RedirectURL}}';
 		</script>	
 	</head>
@@ -236,15 +240,20 @@ func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) g
 		}
 
 		type templateItem struct {
-			SignedToken string
-			RedirectURL string
-			ExtensionID string
+			SignedToken  string
+			RedirectURL  string
+			ExtensionIDs string
 		}
 
+		extensionIds, err := json.Marshal(loginConf.ExtensionIDs)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
 		items := templateItem{
-			SignedToken: signedTokenStr,
-			RedirectURL: redirectURL,
-			ExtensionID: loginConf.ExtensionID,
+			SignedToken:  signedTokenStr,
+			RedirectURL:  redirectURL,
+			ExtensionIDs: string(extensionIds),
 		}
 
 		err = tmpl.Execute(w, items)

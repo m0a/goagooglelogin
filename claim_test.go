@@ -54,8 +54,8 @@ func TestClaim(t *testing.T) {
 		fetchedToken = jwt.ContextJWT(ctx)
 		return nil
 	}
-
-	middleware = jwt.New("keys", nil, securtyScheme)
+	keys := []jwt.Key{"Key"}
+	middleware = jwt.New(jwt.NewSimpleResolver(keys), nil, securtyScheme)
 	dispatchResult = middleware(handler)(context.Background(), respRecord, request)
 	fmt.Println(dispatchResult)
 	fmt.Println(respRecord)

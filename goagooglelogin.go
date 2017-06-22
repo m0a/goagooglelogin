@@ -14,13 +14,13 @@ type (
 	// GoaGloginConf middleware config
 	GoaGloginConf struct {
 		LoginURL           string // defualt: /login
-		CallbackURL        string // default /oauth2callback
+		CallbackURL        string // default: /oauth2callback
 		StateSigned        string // state JWT key
 		LoginSigned        string // login JWT key
 		GoogleClientID     string
 		GoogleClientSecret string
 		CreateClaims       func(googleUserID string, userinfo *oauth2.Userinfoplus, tokenInfo *oauth2.Tokeninfo) (jwt.Claims, error)
-		ExtensionID        string
+		ExtensionIDs       []string
 	}
 )
 
@@ -34,7 +34,7 @@ var (
 		GoogleClientID:     os.Getenv("OPENID_GOOGLE_CLIENT"),
 		GoogleClientSecret: os.Getenv("OPENID_GOOGLE_SECRET"),
 		CreateClaims:       DefaultCreateClaims,
-		ExtensionID:        "",
+		ExtensionIDs:       []string{},
 	}
 )
 

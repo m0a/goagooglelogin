@@ -9,8 +9,10 @@
 		sessionStorage.setItem('signedtoken', signedtoken);
 		let token = sessionStorage.getItem('signedtoken');
 
-		var extensionId = "abcdefghijklmnoabcdefhijklmnoabc";
-		chrome.runtime.sendMessage(extensionId, { jwt: token });
+		var extensionIds = ["abcdefghijklmnoabcdefhijklmnoabc", "test2"];
+		for ( id of extensionIds) {
+			chrome.runtime.sendMessage(id, { jwt: token });
+		}
 		location.href = '{{.RedirectURL}}';
 	</script>
 </head>

@@ -3,9 +3,6 @@ package test
 import (
 	"testing"
 
-	jwtgo "github.com/dgrijalva/jwt-go"
-	"github.com/goadesign/goa/middleware/security/jwt"
-
 	"github.com/goadesign/goa"
 
 	"github.com/m0a/goagooglelogin"
@@ -27,8 +24,7 @@ func TestSecureJWTOK(t *testing.T) {
 	}
 
 	claims := goagooglelogin.MakeClaim("sample", "001", 20)
-	token := jwtgo.NewWithClaims(jwtgo.SigningMethodHS512, claims)
-	service.Context = jwt.WithJWT(service.Context, token)
+	service.Context = goagooglelogin.WithJWTClaims(service.Context, claims)
 
 	control := controllers.NewJWTController(service, &accounts)
 	test.SecureJWTOK(t, service.Context, service, control)

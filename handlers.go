@@ -11,8 +11,9 @@ import (
 
 	"golang.org/x/oauth2"
 
-	jwt "github.com/dgrijalva/jwt-go"
+	jwtgo "github.com/dgrijalva/jwt-go"
 	"github.com/goadesign/goa"
+	"github.com/goadesign/goa/middleware/security/jwt"
 	uuid "github.com/satori/go.uuid"
 	v2 "google.golang.org/api/oauth2/v2"
 )
@@ -48,11 +49,11 @@ func makeAuthHandler(service *goa.Service, loginConf *GoaGloginConf) goa.MuxHand
 
 		conf.RedirectURL = redirectURL.String()
 		service.LogInfo("mount", "middleware", "goagooglelogin", "redirectURL.String()", redirectURL.String())
-		claims := &jwt.MapClaims{
+		claims := &jwtgo.MapClaims{
 			"exp":          time.Now().Add(time.Duration(30) * time.Second).Unix(),
 			"redirect_url": nextURL,
 		}
-		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+		token := jwtgo.NewWithClaims(jwtgo.SigningMethodHS256, claims)
 		state, err := token.SignedString([]byte(loginConf.StateSigned))
 		if err != nil {
 			service.LogInfo("mount", "middleware", "goagooglelogin", "state", state)
@@ -66,10 +67,10 @@ func makeAuthHandler(service *goa.Service, loginConf *GoaGloginConf) goa.MuxHand
 }
 
 // MakeClaim is CreateFunction for login JWT claims
-func MakeClaim(scopes string, googleID string, expireMinute int) jwt.Claims {
+func MakeClaim(scopes string, googleID string, expireMinute int) jwtgo.Claims {
 
 	inXm := time.Now().Add(time.Duration(expireMinute) * time.Minute).Unix()
-	return jwt.MapClaims{
+	return jwtgo.MapClaims{
 		"iss":    "goaglogin",           // who creates the token and signs it
 		"exp":    inXm,                  // time when the token will expire (X minutes from now)
 		"jti":    uuid.NewV4().String(), // a unique identifier for the token
@@ -83,7 +84,7 @@ func MakeClaim(scopes string, googleID string, expireMinute int) jwt.Claims {
 func DefaultCreateClaims(googleUserID string,
 	userInfo *v2.Userinfoplus,
 	tokenInfo *v2.Tokeninfo,
-) (claims jwt.Claims, err error) {
+) (claims jwtgo.Claims, err error) {
 
 	// resp, err := http.Get(userInfo.Picture)
 	// if err != nil {
@@ -117,12 +118,12 @@ func DefaultCreateClaims(googleUserID string,
 	return MakeClaim("api:access", googleUserID, 10), nil
 }
 
-func CreateSignedToken(claims jwt.Claims, loginConf *GoaGloginConf) (string, error) {
+func CreateSignedToken(claims jwtgo.Claims, loginConf *GoaGloginConf) (string, error) {
 	if loginConf == nil {
 		loginConf = &DefaultGoaGloginConf
 	}
 
-	signedToken := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
+	signedToken := jwtgo.NewWithClaims(jwtgo.SigningMethodHS512, claims)
 	signedTokenStr, err := signedToken.SignedString([]byte(loginConf.LoginSigned))
 	if err != nil {
 		return "", err
@@ -138,7 +139,7 @@ func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) g
 		}
 
 		state := r.FormValue("state")
-		t, err := jwt.Parse(state, func(*jwt.Token) (interface{}, error) {
+		t, err := jwtgo.Parse(state, func(*jwtgo.Token) (interface{}, error) {
 			return []byte(loginConf.StateSigned), nil
 		})
 		if err != nil {
@@ -150,7 +151,7 @@ func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) g
 			return
 		}
 
-		mapClaims, ok := t.Claims.(jwt.MapClaims)
+		mapClaims, ok := t.Claims.(jwtgo.MapClaims)
 		if !ok {
 			http.Error(w, "claims is invalid.", http.StatusUnauthorized)
 			return
@@ -276,4 +277,10 @@ func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) g
 		}
 
 	}
+}
+
+// WithJWTClaims is test helper
+func WithJWTClaims(ctx context.Context, claims jwtgo.Claims) context.Context {
+	token := jwtgo.NewWithClaims(jwtgo.SigningMethodHS512, claims)
+	return jwt.WithJWT(ctx, token)
 }

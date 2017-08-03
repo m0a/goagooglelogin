@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"time"
@@ -86,18 +85,18 @@ func DefaultCreateClaims(googleUserID string,
 	tokenInfo *v2.Tokeninfo,
 ) (claims jwt.Claims, err error) {
 
-	resp, err := http.Get(userInfo.Picture)
-	if err != nil {
-		return
-	}
+	// resp, err := http.Get(userInfo.Picture)
+	// if err != nil {
+	// 	return
+	// }
 
-	defer resp.Body.Close()
-	picture, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return
-	}
+	// defer resp.Body.Close()
+	// picture, err := ioutil.ReadAll(resp.Body)
+	// if err != nil {
+	// 	return
+	// }
 
-	fmt.Println(len(picture))
+	// fmt.Println(len(picture))
 
 	// sample save code
 	// account := &models.Account{}
@@ -118,6 +117,19 @@ func DefaultCreateClaims(googleUserID string,
 	return MakeClaim("api:access", googleUserID, 10), nil
 }
 
+func CreateSignedToken(claims jwt.Claims, loginConf *GoaGloginConf) (string, error) {
+	if loginConf == nil {
+		loginConf = &DefaultGoaGloginConf
+	}
+
+	signedToken := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
+	signedTokenStr, err := signedToken.SignedString([]byte(loginConf.LoginSigned))
+	if err != nil {
+		return "", err
+	}
+
+	return signedTokenStr, nil
+}
 func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) goa.MuxHandler {
 	return func(w http.ResponseWriter, r *http.Request, _ url.Values) {
 
@@ -205,8 +217,9 @@ func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) g
 			return
 		}
 
-		signedToken := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
-		signedTokenStr, err := signedToken.SignedString([]byte(loginConf.LoginSigned))
+		// signedToken := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
+		// signedTokenStr, err := signedToken.SignedString([]byte(loginConf.LoginSigned))
+		signedTokenStr, err := CreateSignedToken(claims, loginConf)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return

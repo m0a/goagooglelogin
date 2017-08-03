@@ -14,6 +14,7 @@ import (
 	"github.com/goadesign/goa/middleware"
 	"github.com/m0a/goagooglelogin"
 	"github.com/m0a/goagooglelogin/example/app"
+	"github.com/m0a/goagooglelogin/example/controllers"
 )
 
 var (
@@ -31,7 +32,7 @@ func main() {
 	service.Use(middleware.ErrorHandler(service, true))
 	service.Use(middleware.Recover())
 
-	accounts := map[string]Account{}
+	accounts := map[string]controllers.Account{}
 
 	conf := &goagooglelogin.DefaultGoaGloginConf
 	conf.LoginSigned = "eeee33344445"
@@ -57,7 +58,7 @@ func main() {
 		// sample save code
 		_, ok := accounts[googleUserID]
 		if !ok {
-			account := Account{
+			account := controllers.Account{
 				GoogleUserID: googleUserID,
 				Image:        picture,
 				Email:        userinfo.Email,
@@ -76,10 +77,10 @@ func main() {
 	app.UseJWTMiddleware(service, goagooglelogin.NewJWTMiddleware(conf, app.NewJWTSecurity()))
 
 	// Mount "JWT" controller
-	c1 := NewJWTController(service, &accounts)
+	c1 := controllers.NewJWTController(service, &accounts)
 	app.MountJWTController(service, c1)
 
-	c2 := NewServeController(service)
+	c2 := controllers.NewServeController(service)
 	app.MountServeController(service, c2)
 
 	// Start service

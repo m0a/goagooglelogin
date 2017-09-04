@@ -19,8 +19,12 @@ type (
 		LoginSigned        string // login JWT key
 		GoogleClientID     string
 		GoogleClientSecret string
-		CreateClaims       func(googleUserID string, userinfo *oauth2.Userinfoplus, tokenInfo *oauth2.Tokeninfo) (jwt.Claims, error)
-		ExtensionIDs       []string
+		CreateClaims       func(
+			googleUserID string,
+			userinfo *oauth2.Userinfoplus,
+			tokenInfo *oauth2.Tokeninfo,
+			r *http.Request) (jwt.Claims, error)
+		ExtensionIDs []string
 	}
 )
 

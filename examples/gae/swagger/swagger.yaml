@@ -1,0 +1,167 @@
+consumes:
+- application/json
+- application/xml
+- application/gob
+- application/x-gob
+definitions:
+  GoaExamplesSecuritySecure:
+    description: GoaExamplesSecuritySecure media type (default view)
+    example:
+      Email: Autem omnis est ex sed recusandae.
+      Image: Eos consequatur.
+      Name: Deleniti sed.
+    properties:
+      Email:
+        example: Autem omnis est ex sed recusandae.
+        type: string
+      Image:
+        example: Eos consequatur.
+        type: string
+      Name:
+        example: Deleniti sed.
+        type: string
+    title: 'Mediatype identifier: application/vnd.goa.examples.security.secure+json;
+      view=default'
+    type: object
+  Success:
+    description: The common media type to all request responses for this example (default
+      view)
+    example:
+      ok: false
+    properties:
+      ok:
+        description: Always true
+        example: false
+        type: boolean
+    required:
+    - ok
+    title: 'Mediatype identifier: application/vnd.goa.examples.security.success; view=default'
+    type: object
+  error:
+    description: Error response media type (default view)
+    example:
+      code: invalid_value
+      detail: Value of ID must be an integer
+      id: 3F1FKVRR
+      meta:
+        timestamp: 1.458609e+09
+      status: "400"
+    properties:
+      code:
+        description: an application-specific error code, expressed as a string value.
+        example: invalid_value
+        type: string
+      detail:
+        description: a human-readable explanation specific to this occurrence of the
+          problem.
+        example: Value of ID must be an integer
+        type: string
+      id:
+        description: a unique identifier for this particular occurrence of the problem.
+        example: 3F1FKVRR
+        type: string
+      meta:
+        additionalProperties: true
+        description: a meta object containing non-standard meta-information about
+          the error.
+        example:
+          timestamp: 1.458609e+09
+        type: object
+      status:
+        description: the HTTP status code applicable to this problem, expressed as
+          a string value.
+        example: "400"
+        type: string
+    title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+    type: object
+info:
+  version: ""
+paths:
+  /:
+    get:
+      operationId: serve#/
+      responses:
+        "200":
+          description: File downloaded
+          schema:
+            type: file
+      summary: Download ./static/index.html
+  /jwt:
+    get:
+      description: |-
+        This action is secured with the jwt scheme
+
+        Required security scopes:
+          * `api:access`
+      operationId: jwt#secure
+      produces:
+      - application/vnd.goa.examples.security.secure+json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/GoaExamplesSecuritySecure'
+        "401":
+          description: Unauthorized
+      security:
+      - jwt:
+        - api:access
+      summary: secure jwt
+      tags:
+      - jwt
+  /jwt/unsecure:
+    get:
+      description: This action does not require auth
+      operationId: jwt#unsecure
+      produces:
+      - application/vnd.goa.examples.security.success
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Success'
+      summary: unsecure jwt
+      tags:
+      - jwt
+  /static/{filepath}:
+    get:
+      operationId: serve#/static/*filepath
+      parameters:
+      - description: Relative file path
+        in: path
+        name: filepath
+        required: true
+        type: string
+      responses:
+        "200":
+          description: File downloaded
+          schema:
+            type: file
+        "404":
+          description: File not found
+          schema:
+            $ref: '#/definitions/error'
+      summary: Download ./static
+produces:
+- application/json
+- application/xml
+- application/gob
+- application/x-gob
+responses:
+  OK:
+    description: OK
+    schema:
+      $ref: '#/definitions/Success'
+  Unauthorized:
+    description: Unauthorized
+securityDefinitions:
+  jwt:
+    description: |2-
+
+
+      **Security Scopes**:
+        * `api:access`: API access
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

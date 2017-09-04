@@ -1,0 +1,16 @@
+version: 1
+runtime: go
+api_version: go1.8
+
+handlers:
+
+- url: /
+  static_files: static/index.html
+  upload: static/index.html
+
+- url: /.*
+  script: _go_app
+
+env_variables:
+  OPENID_GOOGLE_SECRET: "NHrMUaZ7ohx_ZDMCXFwGqfeD"
+  OPENID_GOOGLE_CLIENT: "247678913828-06mf3nqmvchjbm7bdc7e25i0bmmtp9vd.apps.googleusercontent.com"

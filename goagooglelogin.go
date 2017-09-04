@@ -10,6 +10,13 @@ import (
 	"google.golang.org/api/oauth2/v2"
 )
 
+// CreateClaimFunction is GoaGloginConf.CreateClaim Type
+type CreateClaimFunction func(
+	googleUserID string,
+	userinfo *oauth2.Userinfoplus,
+	tokenInfo *oauth2.Tokeninfo,
+	r *http.Request) (jwt.Claims, error)
+
 type (
 	// GoaGloginConf middleware config
 	GoaGloginConf struct {
@@ -19,12 +26,8 @@ type (
 		LoginSigned        string // login JWT key
 		GoogleClientID     string
 		GoogleClientSecret string
-		CreateClaims       func(
-			googleUserID string,
-			userinfo *oauth2.Userinfoplus,
-			tokenInfo *oauth2.Tokeninfo,
-			r *http.Request) (jwt.Claims, error)
-		ExtensionIDs []string
+		CreateClaims       CreateClaimFunction
+		ExtensionIDs       []string
 	}
 )
 

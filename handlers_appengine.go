@@ -3,11 +3,11 @@
 package goagooglelogin
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"html/template"
 	"net/http"
-	"net/url"
 
 	jwtgo "github.com/dgrijalva/jwt-go"
 	"github.com/goadesign/goa"
@@ -15,8 +15,8 @@ import (
 	"google.golang.org/appengine"
 )
 
-func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) goa.MuxHandler {
-	return func(w http.ResponseWriter, r *http.Request, _ url.Values) {
+func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) goa.Handler {
+	return func(ctx context.Context, rw http.ResponseWriter, r *http.Request) error {
 
 		if loginConf == nil {
 			loginConf = &DefaultGoaGloginConf
@@ -27,30 +27,30 @@ func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) g
 			return []byte(loginConf.StateSigned), nil
 		})
 		if err != nil {
-			http.Error(w, "jwt.Parse err.", http.StatusUnauthorized)
-			return
+			http.Error(rw, "jwt.Parse err.", http.StatusUnauthorized)
+			return nil
 		}
 		if !t.Valid {
-			http.Error(w, "state is invalid.", http.StatusUnauthorized)
-			return
+			http.Error(rw, "state is invalid.", http.StatusUnauthorized)
+			return nil
 		}
 
 		mapClaims, ok := t.Claims.(jwtgo.MapClaims)
 		if !ok {
-			http.Error(w, "claims is invalid.", http.StatusUnauthorized)
-			return
+			http.Error(rw, "claims is invalid.", http.StatusUnauthorized)
+			return nil
 		}
 		service.LogInfo("mount", "middleware", "makeOauth2callbackHandler", "mapClaims", fmt.Sprintf("%#v", mapClaims))
 		temp, ok := mapClaims["redirect_url"]
 		if !ok {
-			http.Error(w, "mapClaims[redirect_url] is invalid.", http.StatusUnauthorized)
-			return
+			http.Error(rw, "mapClaims[redirect_url] is invalid.", http.StatusUnauthorized)
+			return nil
 		}
 
 		redirectURL, ok := temp.(string)
 		if !ok {
-			http.Error(w, "mapClaims[redirect_url] string is invalid.", http.StatusUnauthorized)
-			return
+			http.Error(rw, "mapClaims[redirect_url] string is invalid.", http.StatusUnauthorized)
+			return nil
 		}
 
 		// 認証コードを取得します
@@ -59,55 +59,55 @@ func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) g
 		// 認証コードからtokenを取得します
 		tok, err := conf.Exchange(context, code)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
+			http.Error(rw, err.Error(), http.StatusUnauthorized)
+			return nil
 		}
 		// tokenが正しいことを確認します
 		if tok.Valid() == false {
-			http.Error(w, "token is invalid.", http.StatusUnauthorized)
-			return
+			http.Error(rw, "token is invalid.", http.StatusUnauthorized)
+			return nil
 		}
 
 		// oauth2 clinet serviceを取得します
 		oAuthservice, err := v2.New(conf.Client(context, tok))
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
+			http.Error(rw, err.Error(), http.StatusUnauthorized)
+			return nil
 		}
 
 		// token情報を取得します
 		// ここにEmailやUser IDなどが入っています
 		tokenInfo, err := oAuthservice.Tokeninfo().AccessToken(tok.AccessToken).Context(context).Do()
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
+			http.Error(rw, err.Error(), http.StatusUnauthorized)
+			return nil
 		}
 
 		userInfo, err := oAuthservice.Userinfo.Get().Do()
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
+			http.Error(rw, err.Error(), http.StatusUnauthorized)
+			return nil
 		}
 
 		if loginConf.CreateClaims == nil {
-			http.Error(w, "expect define conf.CreateClaims", http.StatusUnauthorized)
-			return
+			http.Error(rw, "expect define conf.CreateClaims", http.StatusUnauthorized)
+			return nil
 		}
 
 		googleUserID := tokenInfo.UserId
 		service.LogInfo("mount", "middleware", "MakeOauth2callbackHandler", "CreateClaims googleUserID", googleUserID)
-		claims, err := loginConf.CreateClaims(googleUserID, userInfo, tokenInfo, r)
+		claims, err := loginConf.CreateClaims(googleUserID, userInfo, tokenInfo, ctx)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
+			http.Error(rw, err.Error(), http.StatusUnauthorized)
+			return nil
 		}
 
 		// signedToken := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
 		// signedTokenStr, err := signedToken.SignedString([]byte(loginConf.LoginSigned))
 		signedTokenStr, err := CreateSignedToken(claims, loginConf)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
+			http.Error(rw, err.Error(), http.StatusUnauthorized)
+			return nil
 		}
 
 		tmpl, err := template.New("save_token").Parse(`
@@ -133,8 +133,8 @@ func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) g
 </html>
 		`)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
+			http.Error(rw, err.Error(), http.StatusUnauthorized)
+			return nil
 		}
 
 		type templateItem struct {
@@ -145,8 +145,8 @@ func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) g
 
 		extensionIds, err := json.Marshal(loginConf.ExtensionIDs)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
+			http.Error(rw, err.Error(), http.StatusUnauthorized)
+			return nil
 		}
 		items := templateItem{
 			SignedToken:  signedTokenStr,
@@ -154,11 +154,11 @@ func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) g
 			ExtensionIDs: string(extensionIds),
 		}
 
-		err = tmpl.Execute(w, items)
+		err = tmpl.Execute(rw, items)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
+			http.Error(rw, err.Error(), http.StatusUnauthorized)
+			return nil
 		}
-
+		return nil
 	}
 }

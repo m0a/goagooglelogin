@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -44,8 +45,8 @@ func init() {
 	conf.GoogleClientSecret = os.Getenv("OPENID_GOOGLE_SECRET")
 
 	conf.CreateClaims = func(googleUserID string,
-		userinfo *oauth2.Userinfoplus, tokenInfo *oauth2.Tokeninfo, r *http.Request) (claims jwt.Claims, err error) {
-		appctx := appengine.NewContext(r)
+		userinfo *oauth2.Userinfoplus, tokenInfo *oauth2.Tokeninfo, ctx context.Context) (claims jwt.Claims, err error) {
+		appctx := appengine.WithContext(ctx, goa.ContextRequest(ctx).Request)
 		client := urlfetch.Client(appctx)
 
 		resp, err := client.Get(userinfo.Picture)

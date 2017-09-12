@@ -15,7 +15,7 @@ type CreateClaimFunction func(
 	googleUserID string,
 	userinfo *oauth2.Userinfoplus,
 	tokenInfo *oauth2.Tokeninfo,
-	r *http.Request) (jwt.Claims, error)
+	ctx context.Context) (jwt.Claims, error)
 
 type (
 	// GoaGloginConf middleware config
@@ -45,6 +45,16 @@ var (
 	}
 )
 
+// MessageController implements the message resource.
+type GoaGLoginController struct {
+	*goa.Controller
+}
+
+// newGoaGLoginController creates a goa google login controller.
+func newGoaGLoginController(service *goa.Service) *GoaGLoginController {
+	return &GoaGLoginController{Controller: service.NewController("GoaGLoginController")}
+}
+
 func New(service *goa.Service) goa.Middleware {
 	return WithConfig(service, nil)
 }
@@ -54,12 +64,14 @@ func WithConfig(service *goa.Service, conf *GoaGloginConf) goa.Middleware {
 	if conf == nil {
 		conf = &DefaultGoaGloginConf
 	}
+	ctrl := newGoaGLoginController(service)
+
 	// start url redirect to google
-	service.Mux.Handle("GET", conf.LoginURL, makeAuthHandler(service, conf))
+	service.Mux.Handle("GET", conf.LoginURL, ctrl.MuxHandler("login", makeAuthHandler(service, conf), nil))
 	service.LogInfo("mount", "middleware", "goagooglelogin", "route", "GET "+conf.LoginURL)
 
 	// callback url and state check and get AccessToken
-	service.Mux.Handle("GET", conf.CallbackURL, makeOauth2callbackHandler(service, conf))
+	service.Mux.Handle("GET", conf.CallbackURL, ctrl.MuxHandler("callback", makeOauth2callbackHandler(service, conf), nil))
 	service.LogInfo("mount", "middleware", "goagooglelogin", "route", "GET "+conf.CallbackURL)
 
 	// 横断的には何もしない

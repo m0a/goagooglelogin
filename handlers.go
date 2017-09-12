@@ -26,10 +26,10 @@ var (
 )
 
 // makeAuthHandler is created redirectURL and access redirectURL
-func makeAuthHandler(service *goa.Service, loginConf *GoaGloginConf) goa.MuxHandler {
+func makeAuthHandler(service *goa.Service, loginConf *GoaGloginConf) goa.Handler {
 	conf.ClientID = loginConf.GoogleClientID
 	conf.ClientSecret = loginConf.GoogleClientSecret
-	return func(w http.ResponseWriter, r *http.Request, _ url.Values) {
+	return func(ctx context.Context, rw http.ResponseWriter, r *http.Request) error {
 		nextURL := r.URL.Query().Get("next_url")
 		if nextURL == "" {
 			nextURL = "/"
@@ -54,12 +54,13 @@ func makeAuthHandler(service *goa.Service, loginConf *GoaGloginConf) goa.MuxHand
 		state, err := token.SignedString([]byte(loginConf.StateSigned))
 		if err != nil {
 			service.LogInfo("mount", "middleware", "goagooglelogin", "state", state)
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
+			http.Error(rw, err.Error(), http.StatusUnauthorized)
+			return nil
 		}
 		url := conf.AuthCodeURL(state)
 		service.LogInfo("mount", "middleware", "goagooglelogin", "url", url)
-		http.Redirect(w, r, url, 302)
+		http.Redirect(rw, r, url, 302)
+		return nil
 	}
 }
 
@@ -81,7 +82,7 @@ func MakeClaim(scopes string, googleID string, expireMinute int) jwtgo.Claims {
 func DefaultCreateClaims(googleUserID string,
 	userInfo *v2.Userinfoplus,
 	tokenInfo *v2.Tokeninfo,
-	req *http.Request,
+	ctx context.Context,
 ) (claims jwtgo.Claims, err error) {
 
 	// resp, err := http.Get(userInfo.Picture)

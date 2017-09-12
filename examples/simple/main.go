@@ -72,11 +72,10 @@ func main() {
 		return goagooglelogin.MakeClaim("api:access", googleUserID, 10), nil
 	}
 
-	service.Use(goagooglelogin.WithConfig(service, conf))
-
 	// Mount security middlewares
 	app.UseJWTMiddleware(service, goagooglelogin.NewJWTMiddleware(conf, app.NewJWTSecurity()))
 
+	goagooglelogin.MountControllerWithConfig(service, conf)
 	// Mount "JWT" controller
 	c1 := controllers.NewJWTController(service, &accounts)
 	app.MountJWTController(service, c1)

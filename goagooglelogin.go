@@ -2,7 +2,6 @@ package goagooglelogin
 
 import (
 	"context"
-	"net/http"
 	"os"
 
 	jwt "github.com/dgrijalva/jwt-go"
@@ -45,7 +44,7 @@ var (
 	}
 )
 
-// MessageController implements the message resource.
+// GoaGLoginController implements the googlelogin resource.
 type GoaGLoginController struct {
 	*goa.Controller
 }
@@ -55,11 +54,13 @@ func newGoaGLoginController(service *goa.Service) *GoaGLoginController {
 	return &GoaGLoginController{Controller: service.NewController("GoaGLoginController")}
 }
 
-func New(service *goa.Service) goa.Middleware {
-	return WithConfig(service, nil)
+// MountController is mount login&callback to service
+func MountController(service *goa.Service) {
+	MountControllerWithConfig(service, nil)
 }
 
-func WithConfig(service *goa.Service, conf *GoaGloginConf) goa.Middleware {
+// MountControllerWithConfig is mount login&callback to service(+config)
+func MountControllerWithConfig(service *goa.Service, conf *GoaGloginConf) {
 
 	if conf == nil {
 		conf = &DefaultGoaGloginConf
@@ -74,10 +75,4 @@ func WithConfig(service *goa.Service, conf *GoaGloginConf) goa.Middleware {
 	service.Mux.Handle("GET", conf.CallbackURL, ctrl.MuxHandler("callback", makeOauth2callbackHandler(service, conf), nil))
 	service.LogInfo("mount", "middleware", "goagooglelogin", "route", "GET "+conf.CallbackURL)
 
-	// 横断的には何もしない
-	return func(h goa.Handler) goa.Handler {
-		return func(c context.Context, rw http.ResponseWriter, req *http.Request) error {
-			return h(c, rw, req)
-		}
-	}
 }

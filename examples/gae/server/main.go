@@ -58,8 +58,6 @@ func init() {
 			return nil, err
 		}
 
-		// fmt.Println(len(picture))
-
 		// sample save code
 		_, ok := accounts[googleUserID]
 		if !ok {
@@ -76,11 +74,10 @@ func init() {
 		return goagooglelogin.MakeClaim("api:access", googleUserID, 10), nil
 	}
 
-	service.Use(goagooglelogin.WithConfig(service, conf))
-
 	// Mount security middlewares
 	app.UseJWTMiddleware(service, goagooglelogin.NewJWTMiddleware(conf, app.NewJWTSecurity()))
 
+	goagooglelogin.MountControllerWithConfig(service, conf)
 	// Mount "JWT" controller
 	c1 := controllers.NewJWTController(service, &accounts)
 	app.MountJWTController(service, c1)

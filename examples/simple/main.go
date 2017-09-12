@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -41,7 +42,7 @@ func main() {
 	conf.GoogleClientSecret = os.Getenv("OPENID_GOOGLE_SECRET")
 
 	conf.CreateClaims = func(googleUserID string,
-		userinfo *oauth2.Userinfoplus, tokenInfo *oauth2.Tokeninfo, r *http.Request) (claims jwt.Claims, err error) {
+		userinfo *oauth2.Userinfoplus, tokenInfo *oauth2.Tokeninfo, ctx context.Context) (claims jwt.Claims, err error) {
 		resp, err := http.Get(userinfo.Picture)
 		if err != nil {
 			return nil, err

@@ -1,14 +1,13 @@
 package server
 
 import (
+	"context"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"time"
 
 	"google.golang.org/appengine/urlfetch"
-
-	"google.golang.org/appengine"
 
 	oauth2 "google.golang.org/api/oauth2/v2"
 
@@ -44,9 +43,9 @@ func init() {
 	conf.GoogleClientSecret = os.Getenv("OPENID_GOOGLE_SECRET")
 
 	conf.CreateClaims = func(googleUserID string,
-		userinfo *oauth2.Userinfoplus, tokenInfo *oauth2.Tokeninfo, r *http.Request) (claims jwt.Claims, err error) {
-		appctx := appengine.NewContext(r)
-		client := urlfetch.Client(appctx)
+		userinfo *oauth2.Userinfoplus, tokenInfo *oauth2.Tokeninfo, ctx context.Context) (claims jwt.Claims, err error) {
+
+		client := urlfetch.Client(ctx)
 
 		resp, err := client.Get(userinfo.Picture)
 		if err != nil {

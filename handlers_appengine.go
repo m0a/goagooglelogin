@@ -102,8 +102,6 @@ func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) g
 			return nil
 		}
 
-		// signedToken := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
-		// signedTokenStr, err := signedToken.SignedString([]byte(loginConf.LoginSigned))
 		signedTokenStr, err := CreateSignedToken(claims, loginConf)
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusUnauthorized)

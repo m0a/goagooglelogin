@@ -2,11 +2,9 @@ package controllers
 
 import (
 	"encoding/base64"
-	"errors"
 
-	jwtgo "github.com/dgrijalva/jwt-go"
 	"github.com/goadesign/goa"
-	"github.com/goadesign/goa/middleware/security/jwt"
+	"github.com/m0a/goagooglelogin"
 	"github.com/m0a/goagooglelogin/examples/simple/app"
 )
 
@@ -26,16 +24,21 @@ func NewJWTController(service *goa.Service, ac *map[string]Account) *JWTControll
 
 // Secure runs the secure action.
 func (c *JWTController) Secure(ctx *app.SecureJWTContext) error {
-	jwtContext := jwt.ContextJWT(ctx)
-	if jwtContext == nil {
-		return errors.New("jwtContext is nil")
-	}
-	claims, ok := jwtContext.Claims.(jwtgo.MapClaims)
-	if !ok {
-		return ctx.Unauthorized()
-	}
-	googleID, ok := claims["sub"].(string)
-	if !ok {
+	// jwtContext := jwt.ContextJWT(ctx)
+	// if jwtContext == nil {
+	// 	return errors.New("jwtContext is nil")
+	// }
+	// claims, ok := jwtContext.Claims.(jwtgo.MapClaims)
+	// if !ok {
+	// 	return ctx.Unauthorized()
+	// }
+	// googleID, ok := claims["sub"].(string)
+	// if !ok {
+	// 	return ctx.Unauthorized()
+	// }
+	googleID, err := goagooglelogin.GoogleIDByJWTContext(ctx)
+
+	if err != nil {
 		return ctx.Unauthorized()
 	}
 

@@ -125,7 +125,7 @@ func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) g
 			let extensionIds = JSON.parse({{.ExtensionIDs}});
 			for (let id of extensionIds) {
 				console.log('send to: '+ id + ' jwt: '+ token);
-				chrome.runtime.sendMessage(id, { jwt: token });
+				'chrome' in window && chrome.runtime.sendMessage(id, { jwt: token });
 			}
 
 			location.href = '{{.RedirectURL}}';

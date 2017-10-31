@@ -8,11 +8,15 @@ import (
 	"github.com/goadesign/goa/middleware/security/jwt"
 )
 
+var (
+	ErrJWTContextNil = errors.New("jwtContext is nil")
+)
+
 // GoogleIDByJWTContext return googleID by Context
 func GoogleIDByJWTContext(ctx context.Context) (string, error) {
 	jwtContext := jwt.ContextJWT(ctx)
 	if jwtContext == nil {
-		return "", errors.New("jwtContext is nil")
+		return "", ErrJWTContextNil
 	}
 	claims, ok := jwtContext.Claims.(jwtgo.MapClaims)
 	if !ok {

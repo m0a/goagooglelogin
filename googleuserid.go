@@ -9,6 +9,7 @@ import (
 )
 
 var (
+	// ErrJWTContextNil is Error Content not include JWT
 	ErrJWTContextNil = errors.New("jwtContext is nil")
 )
 

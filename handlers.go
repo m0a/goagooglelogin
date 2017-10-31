@@ -79,10 +79,11 @@ func MakeClaim(scopes string, googleID string, expireMinute int) jwtgo.Claims {
 }
 
 // DefaultCreateClaims is basic save user info function
-func DefaultCreateClaims(googleUserID string,
+func DefaultCreateClaims(
+	ctx context.Context,
+	googleUserID string,
 	userInfo *v2.Userinfoplus,
 	tokenInfo *v2.Tokeninfo,
-	ctx context.Context,
 ) (claims jwtgo.Claims, err error) {
 
 	// resp, err := http.Get(userInfo.Picture)
@@ -117,6 +118,7 @@ func DefaultCreateClaims(googleUserID string,
 	return MakeClaim("api:access", googleUserID, 10), nil
 }
 
+// CreateSignedToken is token creater
 func CreateSignedToken(claims jwtgo.Claims, loginConf *GoaGloginConf) (string, error) {
 	if loginConf == nil {
 		loginConf = &DefaultGoaGloginConf

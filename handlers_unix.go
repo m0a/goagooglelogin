@@ -97,7 +97,7 @@ func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) g
 
 		googleUserID := tokenInfo.UserId
 		service.LogInfo("mount", "middleware", "MakeOauth2callbackHandler", "CreateClaims googleUserID", googleUserID)
-		claims, err := loginConf.CreateClaims(googleUserID, userInfo, tokenInfo, context)
+		claims, err := loginConf.CreateClaims(context, googleUserID, userInfo, tokenInfo)
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusUnauthorized)
 			return nil

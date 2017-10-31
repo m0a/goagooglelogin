@@ -11,10 +11,11 @@ import (
 
 // CreateClaimFunction is GoaGloginConf.CreateClaim Type
 type CreateClaimFunction func(
+	ctx context.Context,
 	googleUserID string,
 	userinfo *oauth2.Userinfoplus,
 	tokenInfo *oauth2.Tokeninfo,
-	ctx context.Context) (jwt.Claims, error)
+) (jwt.Claims, error)
 
 type (
 	// GoaGloginConf middleware config

@@ -5,6 +5,7 @@ import (
 	"github.com/goadesign/goa/middleware/security/jwt"
 )
 
+// NewJWTMiddleware is middlewar
 func NewJWTMiddleware(conf *GoaGloginConf, newJWTSecurity *goa.JWTSecurity) goa.Middleware {
 	if conf == nil {
 		conf = &DefaultGoaGloginConf

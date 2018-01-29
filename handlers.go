@@ -47,7 +47,8 @@ func makeAuthHandler(service *goa.Service, loginConf *GoaGloginConf) goa.Handler
 		conf.RedirectURL = redirectURL.String()
 		service.LogInfo("mount", "middleware", "goagooglelogin", "redirectURL.String()", redirectURL.String())
 		claims := &jwtgo.MapClaims{
-			"exp":          time.Now().Add(time.Duration(30) * time.Second).Unix(),
+			// TODO この箇所でGoogleログイン画面の認証にかかる時間の限界が決まる。つまり本来オプションにすべき時間はここ
+			"exp":          time.Now().Add(time.Duration(5) * time.Minute).Unix(),
 			"redirect_url": nextURL,
 		}
 		token := jwtgo.NewWithClaims(jwtgo.SigningMethodHS256, claims)
@@ -115,7 +116,7 @@ func DefaultCreateClaims(
 	// 		return err
 	// 	}
 	// }
-	return MakeClaim("api:access", googleUserID, 10), nil
+	return MakeClaim("api:access", googleUserID, 1), nil
 }
 
 // CreateSignedToken is token creater

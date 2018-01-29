@@ -26,7 +26,7 @@ func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) g
 			return []byte(loginConf.StateSigned), nil
 		})
 		if err != nil {
-			http.Error(rw, "jwt.Parse err.", http.StatusUnauthorized)
+			http.Error(rw, "jwt.Parse err. err = "+err.Error(), http.StatusUnauthorized)
 			return nil
 		}
 		if !t.Valid {

@@ -65,17 +65,33 @@ func makeAuthHandler(service *goa.Service, loginConf *GoaGloginConf) goa.Handler
 	}
 }
 
+// InValid はValidでerrorを返すInValid専用型
+type InValid struct {
+	err error
+}
+
+var _ jwtgo.Claims = InValid{nil}
+
+// Valid はjwtgo.Claimsを満たす
+func (in InValid) Valid() error {
+	return in.err
+}
+
 // MakeClaim is CreateFunction for login JWT claims
 func MakeClaim(scopes string, googleID string, expireMinute int) jwtgo.Claims {
 
+	uuidV4, err := uuid.NewV4()
+	if err != nil {
+		return InValid{err}
+	}
 	inXm := time.Now().Add(time.Duration(expireMinute) * time.Minute).Unix()
 	return jwtgo.MapClaims{
-		"iss":    "goaglogin",           // who creates the token and signs it
-		"exp":    inXm,                  // time when the token will expire (X minutes from now)
-		"jti":    uuid.NewV4().String(), // a unique identifier for the token
-		"iat":    time.Now().Unix(),     // when the token was issued/created (now)
-		"sub":    googleID,              // the subject/principal is whom the token is about
-		"scopes": scopes,                // token scope - not a standard claim
+		"iss":    "goaglogin",       // who creates the token and signs it
+		"exp":    inXm,              // time when the token will expire (X minutes from now)
+		"jti":    uuidV4.String(),   // a unique identifier for the token
+		"iat":    time.Now().Unix(), // when the token was issued/created (now)
+		"sub":    googleID,          // the subject/principal is whom the token is about
+		"scopes": scopes,            // token scope - not a standard claim
 	}
 }
 

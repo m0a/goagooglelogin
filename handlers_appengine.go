@@ -95,15 +95,17 @@ func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) g
 		}
 
 		googleUserID := tokenInfo.UserId
-		service.LogInfo("mount", "middleware", "MakeOauth2callbackHandler", "CreateClaims googleUserID", googleUserID)
+		service.LogInfo("makeOauth2callbackHandler", "CreateClaims googleUserID", googleUserID)
 		claims, err := loginConf.CreateClaims(context, googleUserID, userInfo, tokenInfo)
 		if err != nil {
+			service.LogError("makeOauth2callbackHandler", "CreateClaims => err", err)
 			http.Error(rw, err.Error(), http.StatusUnauthorized)
 			return nil
 		}
 
-		signedTokenStr, err := CreateSignedToken(claims, loginConf)
+		signedTokenStr, err := createSignedToken(claims, loginConf)
 		if err != nil {
+			service.LogError("makeOauth2callbackHandler", "createSignedToken => err", err)
 			http.Error(rw, err.Error(), http.StatusUnauthorized)
 			return nil
 		}

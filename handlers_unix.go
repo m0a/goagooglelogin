@@ -39,7 +39,7 @@ func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) g
 			http.Error(rw, "claims is invalid.", http.StatusUnauthorized)
 			return nil
 		}
-		service.LogInfo("mount", "middleware", "makeOauth2callbackHandler", "mapClaims", fmt.Sprintf("%#v", mapClaims))
+		service.LogInfo("mount", "middleware", "+build !appengine makeOauth2callbackHandler", "mapClaims", fmt.Sprintf("%#v", mapClaims))
 		temp, ok := mapClaims["redirect_url"]
 		if !ok {
 			http.Error(rw, "mapClaims[redirect_url] is invalid.", http.StatusUnauthorized)
@@ -96,17 +96,16 @@ func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) g
 		}
 
 		googleUserID := tokenInfo.UserId
-		service.LogInfo("mount", "middleware", "MakeOauth2callbackHandler", "CreateClaims googleUserID", googleUserID)
+		service.LogInfo("+build !appengine makeOauth2callbackHandler", "CreateClaims googleUserID", googleUserID)
 		claims, err := loginConf.CreateClaims(context, googleUserID, userInfo, tokenInfo)
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusUnauthorized)
 			return nil
 		}
-
-		// signedToken := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
-		// signedTokenStr, err := signedToken.SignedString([]byte(loginConf.LoginSigned))
-		signedTokenStr, err := CreateSignedToken(claims, loginConf)
+		service.LogInfo(" +build !appengine makeOauth2callbackHandler", "createSignedToken claims", claims)
+		signedTokenStr, err := createSignedToken(claims, loginConf)
 		if err != nil {
+			service.LogError("+build !appengine makeOauth2callbackHandler", "createSignedToken return error", err)
 			http.Error(rw, err.Error(), http.StatusUnauthorized)
 			return nil
 		}

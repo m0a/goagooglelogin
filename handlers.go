@@ -135,8 +135,8 @@ func DefaultCreateClaims(
 	return MakeClaim("api:access", googleUserID, 1), nil
 }
 
-// CreateSignedToken is token creater
-func CreateSignedToken(claims jwtgo.Claims, loginConf *GoaGloginConf) (string, error) {
+// createSignedToken is token creater
+func createSignedToken(claims jwtgo.Claims, loginConf *GoaGloginConf) (string, error) {
 	if loginConf == nil {
 		loginConf = &DefaultGoaGloginConf
 	}

@@ -60,6 +60,7 @@ func makeAuthHandler(service *goa.Service, loginConf *GoaGloginConf) goa.Handler
 		}
 		url := conf.AuthCodeURL(state)
 		service.LogInfo("mount", "middleware", "goagooglelogin", "url", url)
+		// google login 画面にリダイレクト
 		http.Redirect(rw, r, url, 302)
 		return nil
 	}

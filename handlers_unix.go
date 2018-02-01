@@ -21,6 +21,7 @@ func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) g
 			loginConf = &DefaultGoaGloginConf
 		}
 
+		// リダイレクト画面から戻ってきた。
 		state := r.FormValue("state")
 		t, err := jwtgo.Parse(state, func(*jwtgo.Token) (interface{}, error) {
 			return []byte(loginConf.StateSigned), nil
@@ -39,7 +40,7 @@ func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) g
 			http.Error(rw, "claims is invalid.", http.StatusUnauthorized)
 			return nil
 		}
-		service.LogInfo("mount", "middleware", "+build !appengine makeOauth2callbackHandler", "mapClaims", fmt.Sprintf("%#v", mapClaims))
+		service.LogInfo("+build !appengine makeOauth2callbackHandler", "mapClaims", fmt.Sprintf("%#v", mapClaims))
 		temp, ok := mapClaims["redirect_url"]
 		if !ok {
 			http.Error(rw, "mapClaims[redirect_url] is invalid.", http.StatusUnauthorized)
@@ -99,6 +100,7 @@ func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) g
 		service.LogInfo("+build !appengine makeOauth2callbackHandler", "CreateClaims googleUserID", googleUserID)
 		claims, err := loginConf.CreateClaims(context, googleUserID, userInfo, tokenInfo)
 		if err != nil {
+			service.LogError("+build !appengine makeOauth2callbackHandler", "CreateClaims => err", err)
 			http.Error(rw, err.Error(), http.StatusUnauthorized)
 			return nil
 		}

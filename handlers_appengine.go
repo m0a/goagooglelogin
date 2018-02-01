@@ -98,7 +98,9 @@ func makeOauth2callbackHandler(service *goa.Service, loginConf *GoaGloginConf) g
 		service.LogInfo("makeOauth2callbackHandler", "CreateClaims googleUserID", googleUserID)
 		claims, err := loginConf.CreateClaims(context, googleUserID, userInfo, tokenInfo)
 		if err != nil {
+			// 許可しないユーザーが来た場合にはCreateClaims自体を失敗させる
 			service.LogError("makeOauth2callbackHandler", "CreateClaims => err", err)
+			// TODO つまりここをちゃんとレンダリングしたい。今のところerr.Error()の内容の表示だけ
 			http.Error(rw, err.Error(), http.StatusUnauthorized)
 			return nil
 		}
